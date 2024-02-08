@@ -1,0 +1,89 @@
+---
+title: "HW 3"
+author: "Kate Kong jk49633"
+date: "2024-02-04"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+creatinine <- read.csv('creatinine.csv')
+covid <- read.csv('covid.csv')
+marketmodel <- read.csv('marketmodel.csv')
+milk <- read.csv('milk.csv')
+
+library(ggplot2)
+library(dplyr)
+suppressPackageStartupMessages(library(tidyverse))
+```
+
+# Link to the GitHub
+[GitHub](https://github.com/katekong27/SDS_315.git)
+
+
+# **Question 1**
+
+You can also embed plots, for example:
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+plot <- ggplot(creatinine)
+
+plot + geom_point(aes(x=age, y=creatclear)) + geom_smooth(aes(x=age, y=creatclear), method='lm')
+
+model_hr = lm(creatclear ~ age, data=creatinine)
+regdata <- coef(model_hr)
+
+regline <- function(x) {
+  output <- x * regdata[2]
+  output2 = output + regdata[1]
+  return(output2)
+}
+```
+
+A) We should expect a creatinine clearance rate of `r round(as.numeric(regline(55)), 3)` for a 55 year old.
+
+B) The creatinine clearance rate decreases by `r round(as.numeric(abs(regdata[2])), 3)` ml/minute per year because the slope of the linear regression line is `r round(as.numeric(regdata[2]), 3)`.
+
+C) The expected creatinine clearance rate for a 40 year old is `r round(as.numeric(regline(40)), 3)`ml/ minute. The expected creatinine clearance rate for a 60 year old is `r round(as.numeric(regline(60)), 3)` m;/minute. Between 135 - `r round(as.numeric(regline(40)), 3)` = `r 135 - round(as.numeric(regline(40)), 3)` and 112 - `r round(as.numeric(regline(60)), 3)` = `r 112 - round(as.numeric(regline(40)), 3)', the former has the bigger difference. Therefore, a 40 year old with a rate of 135 ml/minute is healthier than a 60 year old with a rate of 112 m;/minute. 
+
+# **Question 2**
+The beta of a company is a measure of systematic risk depending on the market portfolio. It is calculated in terms of percentages, so if a company has a beta of 0.05, its value increases by 0.05% every time the market increases by 1%. If the value of the beta for a specific company is a negative value, it means its value increases by the percentage point every time the market value DECREASES by 1%. 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+```
+
+
+
+# **Question 3**
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+covid2 = covid %>%
+  filter(country == "Italy")
+lm_italy = lm(log(deaths) ~ days_since_first_death, data=covid2)
+coef(lm_italy)
+
+covid3 = covid %>%
+  filter(country == "Spain")
+lm_spain = lm(log(deaths) ~ days_since_first_death, data=covid3)
+coef(lm_spain)
+
+ggplot(covid) + geom_line(aes(x = days_since_first_death, y = log(deaths), color = country)) + scale_color_brewer(type='qual') + scale_y_log10() + labs(title = "Line Graph of COVID Deaths in Italy and Spain Since the Day of the First Death", x = "Days since first death", y = "Deaths")
+
+```
+
+1. The estimated growth rate for Italy is 18.322%. 
+2. The estimated growth rate for Spain is 27.624%. 
+3. Graph is shown above
+
+# **Question 4**
+
+You can also embed plots, for example:
+
+```{r echo=FALSE}
+lm_milk = lm(log(sales) ~ price, data=milk)
+coef(lm_milk)
+```
+
+I believe the price elasticity is -0.54, meaning for every $1 increase in milk pice, the sales decrease by 0.54%. 
