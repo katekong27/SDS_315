@@ -79,8 +79,6 @@ ggplot(covid) + geom_line(aes(x = days_since_first_death, y = log(deaths), color
 
 # **Question 4**
 
-You can also embed plots, for example:
-
 ```{r echo=FALSE}
 lm_milk = lm(log(sales) ~ price, data=milk)
 coef(lm_milk)
