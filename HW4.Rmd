@@ -1,0 +1,292 @@
+---
+title: "HW 04"
+author: "Kate Kong jk49633"
+date: "2024-02-19"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+gasprices <- read.csv('gasprices.csv')
+sclass <- read.csv('sclass.csv')
+nbc_pilotsurvey <- read.csv('nbc_pilotsurvey.csv')
+ebay <- read.csv('ebay.csv')
+
+library(ggplot2)
+library(dplyr)
+suppressPackageStartupMessages(library(tidyverse))
+library(mosaic)
+```
+
+# Link to the GitHub
+[GitHub](https://github.com/katekong27/SDS_315.git)
+
+# **Question 1**
+
+## Part A
+The first theory states, "Gas stations charge more if they lack direct competition in sight." 
+
+```{r echo=FALSE}
+n = 10
+
+comp = gasprices %>%
+  filter(Competitors == "Y")
+comp_mean <- mean(~Price, data=comp)
+comp_sample <- do(100)*mean(~Price, data=sample(comp, size=n))
+comp_sd <- sd(~mean, data=comp_sample)
+comp_sample_mean <- mean(~mean, data=comp_sample)
+
+nocomp = gasprices %>% 
+  filter(Competitors == "N")
+nocomp_mean <- mean(~Price, data = nocomp)
+nocomp_sample <- do(100)*mean(~Price, data=sample(nocomp, size=n))
+nocomp_sd <- sd(~mean, data=nocomp_sample)
+nocomp_sample_mean <- mean(~mean, data=nocomp_sample)
+
+ggplot(comp_sample) + geom_histogram(aes(x = mean), binwidth = 0.005) + labs(title = "Distribution of Sampled Gas Prices at Gas Stations with Competition", x = "Gas Price", y = "Frequency") + geom_vline(xintercept = comp_sample_mean, color='blue')
+
+ggplot(nocomp_sample) + geom_histogram(aes(x = mean), binwidth = 0.005) + labs(title = "Distribution of Sampled Gas Prices at Gas Stations without Competition", x = "Gas Price", y = "Frequency") + geom_vline(xintercept = nocomp_sample_mean, color='blue')
+```
+
+According to the data and the graph, the mean gas price for gas stations with competitors nearby is `r round(comp_mean, 2)` dollars, with a standard error of `r round(comp_sd, 2)` dollars. This gives us a confidence interval of `r (round(comp_mean, 2) - round(comp_sd, 2))` dollars to `r (round(comp_mean, 2) + round(comp_sd, 2))` dollars for the mean of gas prices for gas stations with competitors. On the other hand, the mean gas price for gas stations without competitors is `r round(nocomp_mean, 2)` dollars, with a standard error of `r round(nocomp_sd, 2)` dollars. This gives us a confidence interval of `r (round(nocomp_mean, 2) - round(nocomp_sd, 2))` dollars to `r (round(nocomp_mean, 2) + round(nocomp_sd, 2))` dollars for the mean of gas prices for gas stations without competitors. Gas stations without competitors have a higher mean gas price by `r (round(nocomp_mean, 2) - round(comp_mean, 2))` dollars. Not only that, but their confidence intervals are also higher than those of gas stations without competitors by `r ((round(nocomp_mean, 2) - round(nocomp_sd, 2)) - (round(comp_mean, 2) - round(comp_sd, 2)))` dollars to `r ((round(nocomp_mean, 2) + round(nocomp_sd, 2)) - (round(comp_mean, 2) + round(comp_sd, 2)))` dollars. Based on these figures, it can be concluded that gas stations charge their customers higher prices if there is a lack of competition surrounding them. Therefore, the theory is supported by the data. 
+
+
+## Part B
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+rich = gasprices
+model_hr = lm(Price ~ Income, data=rich)
+rich_data <- coef(model_hr)
+
+boot_rich <- do(1000)*coef(lm(Price ~ Income, data=sample(rich, size=10))) 
+
+ggplot(boot_rich) + geom_histogram(aes(x = Intercept), binwidth = 0.01) + labs(title = "Distribution of Intercepts of Sampled Gas Prices", x = "Intercept", y = "Frequency")
+
+ggplot(boot_rich) + geom_histogram(aes(x = Income), binwidth = 0.0000005) + labs(title = "Distribution of Average Income (Slope) at Gas Stations", x = "Income", y = "Frequency")
+
+mean_boot_int <- mean(~Intercept, data=boot_rich)
+mean_boot_inc <- mean(~Income, data=boot_rich)
+se_intercept <- sd(~Intercept, data=boot_rich)
+se_income <- sd(~Income, data=boot_rich)
+```
+
+The theory states that gas prices are proportional to how wealthy the area is. 
+
+The y-intercept indicates the gas price when the area income is 0, and the slope refers to how much the gas prices rise for every $1 increase in the area income. Based on the data points given and plotted, the y-intercept is `r round(as.numeric(rich_data[1]), 2)` and the slope of the linear regression line is `r round(as.numeric(rich_data[2]), 8)`. The bootstrap mean gas prices (y-intercept) calculated with Monte Carlo simulations report to be in the range of `r round((mean_boot_int + se_intercept), 2)` and `r round((mean_boot_int - se_intercept), 2)`. Moreover, the bootstrap mean slope calculated with the same Monte Carlo simulations report to be in the range of `r round((mean_boot_inc + se_income), 8)` and `r round((mean_boot_inc - se_income), 8)`. Since the mean slope of the linear regression model along with the confidence interval of the slopes are both positive, the gas prices and how wealthy the area is have a positive correlation. Therefore, gas prices are more expensive in richer areas. 
+
+## Part C
+C) Gas stations at stoplights charge more.
+
+```{r echo=FALSE}
+n = 10
+
+stoplight = gasprices %>%
+  filter(Stoplight == "Y")
+stop_mean <- mean(~Price, data=stoplight)
+stop_sample <- do(100)*mean(~Price, data=sample(stoplight, size=n))
+stop_sd <- sd(~mean, data=stop_sample)
+stop_sample_mean <- mean(~mean, data=stop_sample)
+
+nostop = gasprices %>% 
+  filter(Stoplight == "N")
+nostop_mean <- mean(~Price, data = nostop)
+nostop_sample <- do(100)*mean(~Price, data=sample(nostop, size=n))
+nostop_sd <- sd(~mean, data=nostop_sample)
+nostop_sample_mean <- mean(~mean, data=nostop_sample)
+
+ggplot(stop_sample) + geom_histogram(aes(x = mean), binwidth = 0.005) + labs(title = "Distribution of Sampled Gas Prices at Gas Stations Near Stoplights", x = "Gas Price", y = "Frequency") + geom_vline(xintercept = stop_sample_mean, color='blue')
+
+ggplot(nostop_sample) + geom_histogram(aes(x = mean), binwidth = 0.005) + labs(title = "Distribution of Sampled Gas Prices at Gas Stations Near Stoplights", x = "Gas Price", y = "Frequency") + geom_vline(xintercept = nostop_sample_mean, color='blue')
+
+```
+
+The theory suggests that gas stations near stoplights charge higher gas prices compared to gas stations that are not located near a stoplight. The mean gas price of gas stations near stoplights are `r round(stop_mean, 2)` while the mean gas price at gas stations not located near a stoplight is `r round(nostop_mean, 2)`. If we compare these two types of gas stations using Monte Carlo simulations, which can help represent a broader population, the mean gas prices at stations near the stoplight range from `r round((stop_sample_mean - stop_sd), 8)` and `r round((stop_sample_mean + stop_sd), 8)` dollars, with a mean of `r round(stop_sample_mean, 8)`. On the other hand, mean gas prices at stations farther away from the stoplight range from `r round((nostop_sample_mean - nostop_sd), 8)` to `r round((nostop_sample_mean + nostop_sd), 8)`, with a mean of `r round(stop_sample_mean, 8)`. Since the expected and actual mean gas prices are higher for gas stations farther from the stoplight, the claim that gas stations near stoplights are more expensive is not supported by data.  
+
+## Part D
+
+```{r echo=FALSE}
+n = 10
+
+highway = gasprices %>%
+  filter(Highway == "Y")
+high_mean <- mean(~Price, data=highway)
+high_sample <- do(100)*mean(~Price, data=sample(highway, size=n))
+high_sd <- sd(~mean, data=high_sample)
+high_sample_mean <- mean(~mean, data=high_sample)
+
+nohigh = gasprices %>% 
+  filter(Highway == "N")
+nohigh_mean <- mean(~Price, data = nohigh)
+nohigh_sample <- do(100)*mean(~Price, data=sample(nohigh, size=n))
+nohigh_sd <- sd(~mean, data=nohigh_sample)
+nohigh_sample_mean <- mean(~mean, data=nohigh_sample)
+
+ggplot(high_sample) + geom_histogram(aes(x = mean), binwidth = 0.005) + labs(title = "Distribution of Sampled Gas Prices at Gas Stations Near Highways", x = "Gas Price", y = "Frequency") + geom_vline(xintercept = high_sample_mean, color='blue')
+
+ggplot(nohigh_sample) + geom_histogram(aes(x = mean), binwidth = 0.005) + labs(title = "Distribution of Sampled Gas Prices at Gas Stations Near Highways", x = "Gas Price", y = "Frequency") + geom_vline(xintercept = nohigh_sample_mean, color='blue')
+```
+
+This theory states, "Gas stations with direct highway access charge more." If we compare the actual mean gas price at gas stations with direct highway access (`r round(high_mean, 2)` dollars) with the actual mean gas price at gas stations without direct highway access (`r round(nohigh_mean, 2)` dollars), gas stations with direct highway access have higher actual mean gas price with a difference of `r (round(high_mean, 2) - round(nohigh_mean, 2))` dollars. In addition, the confidence interval for expected prices at gas stations with direct highway access is `r round((high_sample_mean - high_sd), 8)` - `r round((high_sample_mean + high_sd), 8)` dollars. On the other hand, the confidence interval for expected prices at gas stations without direct highway access is `r round((nohigh_sample_mean - nohigh_sd), 8)` - `r round((nohigh_sample_mean + nohigh_sd), 8)` dollars. The gas stations with direct highway access have both higher actual average gas prices and expected confidence interval. Therefore, the theory is backed by data- gas stations with direct highway access do in fact charge more for gas. 
+
+## Part E
+
+```{r echo=FALSE}
+n = 10
+
+noshell = gasprices %>%
+  mutate(isShell = (Name == "Shell")) %>%
+  filter(isShell == FALSE)
+noshell_mean <- mean(~Price, data=noshell)
+noshell_sample <- do(100)*mean(~Price, data=sample(noshell, size=n))
+noshell_sd <- sd(~mean, data=noshell_sample)
+noshell_sample_mean <- mean(~mean, data=noshell_sample)
+
+shell = gasprices %>%
+  mutate(isShell = (Name == "Shell")) %>%
+  filter(isShell == TRUE)
+shell_mean <- mean(~Price, data=shell)
+shell_sample <- do(100)*mean(~Price, data=sample(shell, size=n))
+shell_sd <- sd(~mean, data=shell_sample)
+shell_sample_mean <- mean(~mean, data=shell_sample)
+
+ggplot(shell_sample) + geom_histogram(aes(x = mean), binwidth = 0.005) + labs(title = "Distribution of Sampled Gas Prices at Shell Gas Stations", x = "Gas Price", y = "Frequency") + geom_vline(xintercept = shell_sample_mean, color='blue')
+
+ggplot(noshell_sample) + geom_histogram(aes(x = mean), binwidth = 0.005) + labs(title = "Distribution of Sampled Gas Prices at Non-Shell Gas Stations", x = "Gas Price", y = "Frequency") + geom_vline(xintercept = noshell_sample_mean, color='blue')
+
+```
+
+The theory claims that Shell gas stations charge more than other, non-Shell gas stations. Comparison between the actual average gas prices at Shell gas stations (`r round(shell_mean, 2)` dollars) with the actual mean gas price at non-Shell gas stations (`r round(noshell_mean, 2)` dollars) indicates that Shell gas stations do charge more than non-Shell stations, with a difference of `r (round(shell_mean, 2) - round(noshell_mean, 2))` dollars. In addition, Shell gas stations have an expected confidence interval of `r round((shell_sample_mean - shell_sd), 8)` - `r round((shell_sample_mean + shell_sd), 8)` dollars. On the other hand, non-Shell stations have an expected average gas price confidence interval of `r round((noshell_sample_mean - noshell_sd), 8)` - `r round((noshell_sample_mean + noshell_sd), 8)` dollars. Since Shell gas stations have both higher actual mean gas prices and expected mean gas price confidence interval, the data supports the theory stated above. Shell gas stations are more expensive on average than non-Shell gas stations. 
+
+# **Question 2**
+
+## Part A
+
+```{r echo=FALSE}
+sclass2 = sclass %>%
+  filter(year == 2011 & trim == "63 AMG")
+
+boot_63 = do(1000)*mean(~mileage, data=mosaic::resample(sclass2))
+confidence_63 = confint(boot_63, level = 0.95)
+confidence_63
+```
+
+Given that the confidence level is 95%, the bootstrap confidence interval for the average mileage of 2011 S-Class 63 AMGs in the used-car market ranges from `r round(as.numeric(confidence_63[1, 2]), 3)` to `r round(as.numeric(confidence_63[1, 3]), 3)` mph.
+
+## Part B
+
+```{r echo=FALSE}
+sclass3 = sclass %>%
+  filter(year == 2014 & trim == "550") %>%
+  mutate(isBlack = (color == "Black"))
+
+boot_550 = do(10000)*prop(~isBlack, data=mosaic::resample(sclass3))
+confidence_550 = confint(boot_550, level = 0.95)
+confidence_550
+```
+
+With a confidence level of 95%, the bootstrap confidence interval for the proportion of black vehicles among the used 2014 S-Class 550s in the market ranges from `r round(as.numeric(confidence_550[1, 2]), 3)` to `r round(as.numeric(confidence_550[1, 3]), 3)` mph.
+
+# **Question 3**
+
+## Part A
+
+```{r echo=FALSE}
+happy_ed = nbc_pilotsurvey %>%
+  filter(Show == "Living with Ed")
+mean_ed = mean(~Q1_Happy, data = happy_ed)
+boot_ed = do(1000)*mean(~Q1_Happy, data=mosaic::resample(happy_ed))
+colnames(boot_ed)[1] <- "mean_happy"
+ggplot(boot_ed) + geom_histogram(aes(x=mean_happy), binwidth = 0.01) + labs(title = "Distribution of Responses on Happiness Level for show Living with Ed from Monte Carlo Simulations", x = "Happiness", y = "Frequency")
+confidence_ed = confint(boot_ed, level = 0.95)
+confidence_ed
+
+happy_earl = nbc_pilotsurvey %>%
+  filter(Show == "My Name is Earl")
+mean_earl = mean(~Q1_Happy, data = happy_earl)
+boot_earl = do(1000)*mean(~Q1_Happy, data=mosaic::resample(happy_earl))
+ggplot(boot_earl) + geom_histogram(aes(x=mean), binwidth = 0.01) + labs(title = "Distribution of Responses on Happiness Level for show My Name is Earl from Monte Carlo Simulations", x = "Happiness", y = "Frequency")
+confidence_earl = confint(boot_earl, level = 0.95)
+confidence_earl
+```
+
+The purpose of this analysis is to determine whether Ed or Earl makes viewers happier. 
+
+For this analysis, bootstrapping was used. First, the mean happiness rating of viewers was calculated using data collected from the actual survey. Then, to gain a better sense of what the majority of viewers of the respective shows feel about the shows, Monte Carlo simulations were performed 10,000 times. Based on this information, a confidence interval with 95% confidence was determined. 
+
+With a 95% confidence level, it can be said that the mean happiness rating for "Living with Ed" viewers lie somewhere between `r round(as.numeric(confidence_ed[2]), 3)` and `r round(as.numeric(confidence_ed[3]), 3)`, with a survey indicating `r round(mean_ed, 3)` as the mean. On the other hand, the mean happiness rating for "My Name is Earl" viewers stand somewhere between `r round(as.numeric(confidence_earl[2]), 3)` and `r round(as.numeric(confidence_earl[3]), 3)`, with a survey giving `r round(mean_earl, 3)` as its mean. 
+
+In conclusion, viewers of "Life with Ed" are happier with their show compared to the viewers of "My Name is Earl". It should be noted that Earl has a lower confidence interval and than than Ed (`r round(as.numeric(confidence_ed[2]), 3)` - `r round(as.numeric(confidence_ed[3]), 3)` vs. `r round(as.numeric(confidence_earl[2]), 3)` - `r round(as.numeric(confidence_earl[3]), 3)`). Furthermore, Earl also had a lower mean happiness value on the survey than Ed (`r round(mean_ed, 3)` vs. `r round(mean_earl, 3)`). Since Earl consistently received lower happiness rating than Ed, it can be concluded that Ed's viewers happier than that of Earl.
+
+
+## Part B
+
+```{r echo=FALSE}
+loser = nbc_pilotsurvey %>%
+  filter(Show == "The Biggest Loser")
+mean_loser = mean(~Q1_Annoyed, data = loser)
+boot_loser = do(1000)*mean(~Q1_Happy, data=mosaic::resample(loser))
+ggplot(boot_loser) + geom_histogram(aes(x=mean), binwidth = 0.01) + labs(title = "Distribution of Responses on Happiness Level for The Biggest Loser from Monte Carlo Simulations", x = "Annoyed Rating", y = "Frequency")
+confidence_loser = confint(boot_loser, level = 0.95)
+confidence_loser
+
+apprentice = nbc_pilotsurvey %>%
+  filter(Show == "The Apprentice: Los Angeles")
+mean_apprentice = mean(~Q1_Annoyed, data = apprentice)
+boot_apprentice = do(1000)*mean(~Q1_Happy, data=mosaic::resample(apprentice))
+ggplot(boot_apprentice) + geom_histogram(aes(x=mean), binwidth = 0.01) + labs(title = "Distribution of Responses on Happiness Level for The Apprentice: Los Angeles from Monte Carlo Simulations", x = "Annoyed Rating", y = "Frequency")
+confidence_apprentice = confint(boot_apprentice, level = 0.95)
+confidence_apprentice
+
+```
+
+This analysis was performed to figure out whether viewers of "The Biggest Loser" or the viewers of "The Apprentice: Los Angeles" are consistently more annoyed. 
+
+Similar to the happiness rating for Ed and Earl, bootstrapping was used to compare the two shows as well. First, the mean value of annoyedness was calculated using the data from the survey. Then, 10,000 Monte Carlo simulations were performed to generate data that can be used to predict a wider audience. From these simulations, a confidence interval that describes the mean annoyedness was constructed. 
+
+We are 95% sure the mean annoyedness for "The Biggest Loser" viewers range from `r round(as.numeric(confidence_loser[2]), 3)` and `r round(as.numeric(confidence_loser[3]), 3)`, with a survey indicating `r round(mean_loser, 3)` as the mean. On the other hand, the mean annoyedness rating for "The Apprentice: Los Angeles" viewers are somewhere between `r round(as.numeric(confidence_apprentice[2]), 3)` and `r round(as.numeric(confidence_apprentice[3]), 3)`, with a survey giving `r round(mean_apprentice, 3)` as its mean. 
+
+The results of the analysis show that watching "The Biggest Loser" annoys the audience more than watching "The Apprentice: Los Angeles". Viewers for "The Biggest Loser" reported to have a higher confidence interval than those of "The Apprentice: Los Angeles" (`r round(as.numeric(confidence_loser[2]), 3)` - `r round(as.numeric(confidence_loser[3]), 3)` vs. `r round(as.numeric(confidence_apprentice[2]), 3)` - `r round(as.numeric(confidence_apprentice[3]), 3)`). In addition, "The Biggest Loser" had a higher mean survey annoyance rating of `r round(mean_loser, 3)` whereas "The Apprentice: Los Angeles" had a mean annoyance value of `r round(mean_apprentice, 3)`. On both metrics, "The Biggest Loser" had a higher level of annoyance from viewers. Therefore, "The Biggest Loser" consistently produces higher response to the question asking viewers if they are annoyed. 
+
+
+## Part C
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+dancing = nbc_pilotsurvey %>%
+  filter(Show == "Dancing with the Stars") %>%
+  mutate(greaterThan4 = (Q2_Confusing >= 4))
+prop_dancing <- prop(~greaterThan4, data=dancing)
+boot_dancing = do(10000)*prop(~greaterThan4, data=mosaic::resample(dancing))
+boot_mean <- mean(mean, data=boot_dancing)
+ggplot(boot_loser) + geom_histogram(aes(x=mean), binwidth = 0.01) + labs(title = "Distribution of Confused Dancing With The Stars Viewers", x = "Confused Rating", y = "Frequency")
+confidence_dancing = confint(boot_dancing, level = 0.95)
+confidence_dancing
+```
+
+This section of the report is attempting to find out what proportion of Americans would give "Dancing with the Stars" a 4 or a 5 when rating how confusing it is. 
+
+To answer the question above, sampling and bootstrapping by proportion was used. This method was similar to other bootstrapping problems except the data generated from sampling was the proportion not the mean value. The Monte Carlo simulations were run 10,000 times, and each time the simulation counted the proportion of viewers who were confused while watching Dancing With The Stars. 
+
+The bootstrapped sample gave a confidence interval of `r round(100 * as.numeric(confidence_dancing[2]), 3)` percent to `r round(100 * as.numeric(confidence_dancing[3]), 3)` percent, with a 95% confidence level and a bootstrapped mean of `r round(100 * boot_mean, 3)` percent. Since the bootstraped sample is intended to represent the American population, not just those who were surveyed, it can be said with 95% confidence that there is `r round(as.numeric(100 * confidence_dancing[2]), 3)` percent to `r round(100 * as.numeric(confidence_dancing[3]), 3)` percent chance that Americans would give "Dancing with the Stars" a 4 or a 5 when rating how confusing it is.
+
+# **Question 4**
+
+```{r echo=FALSE}
+mean_rev_ratio = mean(rev_ratio ~ adwords_pause, data=ebay)
+mean_diff_ratio = diffmean(rev_ratio ~ adwords_pause, data=ebay)
+
+boot_ebay = do(10000)*diffmean(rev_ratio ~ adwords_pause, data=mosaic::resample(ebay))
+ggplot(boot_ebay) + geom_histogram(aes(x=diffmean), binwidth = 0.005) + labs(title = "Distribution of Difference In Mean Revenue Ratios Between Control and \nTreatment Groups from Monte Carlo Simulations", x = "Difference in Mean Revenue Ratio", y = "Frequency")
+confidence_ebay = confint(boot_ebay, level = 0.95)
+confidence_ebay
+```
+
+The goal for this analysis is to figure out whether paid search advertising bring in extra revenue to Ebay. 
+
+To analyze the data, the bootstrapping method was used. First, the difference in mean revenue ratio for treatment and control groups collected from the actual data is `r round(mean_diff_ratio, 3)`, where the mean ratio for the treatment group (paid Google advertisement stopped) is `r round(as.numeric(mean_rev_ratio[2]), 3)` and the mean ratio for the control group (paid Google advertisement continued) is `r round(as.numeric(mean_rev_ratio[1]), 3)`. Then, I ran 10,000 Monte Carlo simulations using samples of the original data set to describe the statistical uncertainty by determining the confidence interval. 
+
+It can be said with 95% confidence level that the interval `r round(as.numeric(confidence_ebay[2]), 3)` to `r round(as.numeric(confidence_ebay[3]), 3)` accurately describe the describe the difference in mean ratios between the control and treatment groups. The confidence interval indicates that on average, the control group has a higher revenue ratio by `r abs(round(as.numeric(confidence_ebay[2]), 3))` to `r abs(round(as.numeric(confidence_ebay[3]), 3))`. 
+
+Since control group is the group where paid Google advertisement was continued throughout the experiment and the group with higher revenue ratio, it can be concluded that the paid Google advertisement have a positive influence on Ebay revenue. Hence, paid Google advertisements bring in extra revenue for Ebay.
+
+
