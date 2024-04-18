@@ -1,0 +1,76 @@
+---
+title: "SDS 315 HW 9"
+author: "Kate Kong jk49633"
+date: "2024-04-17"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(mosaic)
+library(ggplot2)
+
+turnout <- read.csv('turnout.csv')
+solder <- read.csv('solder.csv')
+```
+
+# Link to the GitHub
+[GitHub](https://github.com/katekong27/SDS_315.git)
+
+# **Question 1**
+
+## Part A
+
+```{r echo=FALSE}
+voted = filter(turnout, voted1998 == 1)
+gotcall <- sum(voted$GOTV_call) / nrow(voted)
+```
+
+`r round(gotcall * 100, 3)`% of the people who voted in 1998 received a GOTV call. 
+
+`r 100 - round(gotcall * 100, 3)`% of the people who voted in 1998 did not receive a GOTV call. 
+
+```{r echo=FALSE}
+nocall = nrow(voted) - sum(voted$GOTV_call)
+callorno <- c(sum(voted$GOTV_call), nocall)
+prop.test(x=callorno, n=c(nrow(voted), nrow(voted)))
+```
+
+## Part B
+
+```{r echo=FALSE}
+voted = filter(turnout, voted1998 == 1)
+gotcall <- sum(voted$GOTV_call) / nrow(voted)
+gotcall
+```
+
+`r round(gotcall * 100, 3)` of the people who voted in 1998 received a GO
+
+# **Question 2**
+
+## Part A
+
+You can also embed plots, for example:
+
+```{r echo=FALSE, warning=FALSE}
+plot = ggplot(solder)
+plot + geom_jitter(aes(x = Opening, y = skips), width=0.1) + stat_summary(aes(x = Opening, y = skips), fun='mean', color='pink', size=1)
+```
+
+
+```{r echo=FALSE, warning=FALSE}
+plot = ggplot(solder)
+plot + geom_jitter(aes(x = Solder, y = skips), width=0.1) + stat_summary(aes(x = Solder, y = skips), fun='mean', color='pink', size=1)
+```
+
+## Part B
+
+You can also embed plots, for example:
+
+```{r echo=FALSE, warning=FALSE}
+att = lm(skips ~ Opening + Solder + Opening:Solder, data=solder)
+confint(att, level = 0.95) %>% round(0)
+```
+
