@@ -1,0 +1,92 @@
+---
+title: "HW 10"
+author: "Kate Kong jk49633"
+date: "2024-04-24"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+redline <- read.csv('redlining.csv')
+groceries <- read.csv('groceries.csv')
+
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(mosaic)
+```
+
+# **Problem 1**
+
+1. Question
+The main question we are trying to answer through this data analysis is: are private home insurance companies redlining racial minorities? By this, we are wanting to find out whether private insurance companies are refusing to serve people of color because of their race or actual, legitimate reasons. 
+
+2. Methods
+Performing this analysis could be done through building linear regression models that account for multiple indicators that influence the percentage of minorities living in that zip code and the number of FAIR policies. 
+
+3. Results
+```{r echo=FALSE, warning=FALSE}
+redlining = redline %>%
+  mutate(income_range = cut_number(income, 4))
+
+ggplot(redlining, aes(x=minority, y=policies, color=income_range)) + geom_point() + geom_smooth(method='lm')
+```
+
+4. Conclusion
+Based on the graph above, it can be concluded that minorities of higher income are more likely to turn to FAIR instead of using private insurance. 
+# **Problem 2**
+
+## Part A.
+
+```{r echo=FALSE}
+mean_price = groceries %>%
+  group_by(Store) %>%
+  summarize(AvgPrice = mean(Price))
+ggplot(mean_price) + geom_col(aes(x = Store, y = AvgPrice), col = 'pink', fill = 'pink') + labs(title = "Average Prices of Products Sold at Each Store", x = "Store", y = "Mean Prices of Products Sold") + coord_flip()
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## Part B.
+
+```{r echo=FALSE}
+ProductCount = groceries %>%
+  group_by(Product) %>%
+  summarize(NumProds = length(Product))
+ggplot(ProductCount) + geom_col(aes(x = Product, y = NumProds), col = 'pink', fill = 'pink') + labs(title = "Number of Stores Each Product Is Sold At", x = "Product Name", y = "Number of Stores") + coord_flip()
+```
+
+## Part C.
+
+```{r echo=FALSE}
+groceries_types_products = lm(Price ~ Type + Product + Type:Product, data=groceries)
+groceries_types_products
+confint(groceries_types_products, level = 0.95) %>% round(2)
+```
+
+Compared with ordinary grocery stores (like Albertsons, HEB, or Krogers), convenience stores charge somewhere between (lower bound) and (upper bound) dollars more for the same product.
+
+## Part D.
+
+```{r echo=FALSE}
+groceries3 = lm(Price ~ Product + Store + Product:Store, data=groceries)
+coef(groceries3) %>%
+  round(2)
+```
+
+## Part E.
+
+
+## Part F.
+
+```{r echo=FALSE}
+groceries4 = groceries %>%
+  mutate(Income10k = Income / 10000)
+
+groceries4_analysis = lm(Price ~ Product + Income10k + Product:Income10k, data=groceries4)
+coef(groceries4_analysis) %>%
+  round(2)
+```
+
+
